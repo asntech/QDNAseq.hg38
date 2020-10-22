@@ -13,3 +13,4 @@ License: GPL
 URL: https://github.com/asntech/QDNAseq.hg38
 BugReports: https://github.com/asntech/QDNAseq.hg38/issues
 NeedsCompilation: no
+RoxygenNote: 7.0.2
