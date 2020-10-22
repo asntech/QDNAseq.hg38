@@ -1,0 +1,15 @@
+Package: QDNAseq.hg38
+Type: Package
+Title: QDNAseq bin annotation for hg38
+Version: 1.0.0
+Date: 2020-09-11
+Author: Aziz Khan
+Maintainer: Aziz Khan <azizk@stanford.edu>
+Description: This package provides QDNAseq bin annotations for the
+        human genome build hg38.
+Depends: R (>= 3.2.1), QDNAseq
+biocViews: ExperimentData, OrganismData, Homo_sapiens_Data
+License: GPL
+URL: https://github.com/asntech/QDNAseq.hg38
+BugReports: https://github.com/asntech/QDNAseq.hg38/issues
+NeedsCompilation: no
