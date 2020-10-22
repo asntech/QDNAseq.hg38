@@ -13,9 +13,9 @@ Install `hg38` package from GitHub:
 
 ``` r
 #Install the QDNAseq.hg38 package using remotes
-remotes::install_github("asntech/QDNAseq.hg38")
+remotes::install_github("asntech/QDNAseq.hg38@main")
 #or devtools
-devtools::install_github("asntech/QDNAseq.hg38")
+devtools::install_github("asntech/QDNAseq.hg38@main")
 ```
 
 ## Use QDNAseq.hg38
