@@ -1,16 +1,12 @@
 # QDNAseq.hg38
 >QDNAseq bin annotation for hg38
 
-[![HitCount](http://hits.dwyl.io/asntech/QDNAseq.hg38.svg)](http://hits.dwyl.io/asntech/QDNAseq.hg38)
-
-This package is a fork of Bioconductor R package
-[QDNAseq.hg19](https://doi.org/doi:10.18129/B9.bioc.QDNAseq.hg19) and provides QDNAseq bin annotations of size `5, 10, 15, 30, 50, 100, 500 and 1000` kbp for the human genome build hg38.
-The bin annotations are created using the steps mentioned in QDNAseq vignette and also [here](https://github.com/ccagc/QDNAseq/issues/59).
+This package provides QDNAseq bin annotations of size `1, 5, 10, 15, 30, 50, 100, 500 and 1000` kbp for the human genome build hg38.The bin annotations are created using the steps mentioned in QDNAseq vignette and also [here](https://github.com/ccagc/QDNAseq/issues/59).
 
 
 ## Installation
 
-Install `hg38` package from GitHub:
+Install the package from GitHub:
 
 ``` r
 #Install the QDNAseq.hg38 package using remotes
@@ -27,4 +23,4 @@ library(QDNAseq.hg38)
 bins <- getBinAnnotations(binSize=50, genome="hg38")
 ```
 
-Find more details about QDNAseq here: https://doi.org/doi:10.18129/B9.bioc.QDNAseq
+`QDNAseq.hg38` is adopted from [QDNAseq.hg19](https://doi.org/doi:10.18129/B9.bioc.QDNAseq.hg19). Find more details about QDNAseq here: https://doi.org/doi:10.18129/B9.bioc.QDNAseq
