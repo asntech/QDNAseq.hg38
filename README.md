@@ -29,13 +29,38 @@ bins <- getBinAnnotations(binSize=50, genome="hg38")
 `QDNAseq.hg38` is adopted from [QDNAseq.hg19](https://doi.org/doi:10.18129/B9.bioc.QDNAseq.hg19). Find more details about QDNAseq here: https://doi.org/doi:10.18129/B9.bioc.QDNAseq
 
 
-## Reproducibility
+## Steps used to generate hg38 bins
 
-Below are the steps and data used to generate the QDNAseq.hg38 bin annotations.
+The following steps were used to create the bin files.
 
-### Step 1: Baseline samples and processing 
+### 1. Create mappability file
+To calculate the average mappabilities, we need a mappability file in the `bigWig` format and the `bigWigAverageOverBed` binary.
 
-The the fastq files for the following 38 samples was downloaded from ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/.
+We used [GenMap](https://github.com/cpockrandt/genmap) to generate the 50mer mappability file with 2-mismatches.
+
+``` bash
+# Download the pre-build index for GRCh38/hg38
+wget http://ftp.imp.fu-berlin.de/pub/cpockrandt/genmap/indices/grch38-no-alt.tar.gz
+
+# Compute 50mer mappability file in wig format
+genmap map -K 50 -E 2 -I /path/to/index/grch38-no-alt -O /path/to/output/folder -w
+
+# Convert the wig file to bigwig
+wigToBigWig grch38-no-alt.wig <hg38.chrom.sizes> mappability.genmap.50mer.bigwig
+
+```
+
+### 2. Get ENCODE excluded regions
+
+``` bash
+# Download ENCODE excluded regions aka blacklist regions
+wget https://github.com/Boyle-Lab/Blacklist/blob/master/lists/hg38-blacklist.v2.bed.gz?raw=true -o hg38-blacklist.v2.bed.gz
+gzip -d hg38-blacklist.v2.bed.gz
+```
+
+### 3. Control data set to calculate median residuals
+
+To calculate median residuals of the LOESS fit a control set of 38 samples from the 1000 Genomes Project were downloaded from ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/.
 
 These 38 samples are matched the number mentioned in the QDNAseq instructions for hg19 annotations.
 
@@ -80,63 +105,60 @@ NA19789
 NA19901
 ```
 
-Next reads for these 38 samples were trimed to 50bp using `TrimGalore v0.4.4`.
+Next, reads were trimmed to 50 bp using `trim_galore v0.4.4`, and the multiple files for each sample.
 
-```
-trim_galore --cores 32 --hardtrim5 50 $FASTQ
-```
-
-Next reads were aligned using bwa aln and samse (`BWA v0.6.2`), and sorted and indexed using `Samtools v1.11`
-
-Here is example for one sample `HG01101`.
 ``` bash
-SAMPLE=HG01101
-REF_GENOME=/path/to/hg38/genome.fa
-
-bwa aln -t 16 -n 2 -q 40 $REF_GENOME ${SAMPLE}.fq.gz > ${SAMPLE}.sai
-bwa samse  ${SAMPLE}.sai ${SAMPLE}.fq.gz | samtools view --threads 16 -hb | samtools sort - > ${SAMPLE}.bam
-samtools index ${SAMPLE}.bam
+for read in *.fq.gz; do
+  trim_galore --cores 32 --hardtrim5 50 $read
+done;
 ```
 
+Next, these reads were aligned with `BWA v0.6.2` allowing two mismatches and end-trimming of bases
+with qualities below 40. bam files were sorted and indexed using `samtools v1.11`
 
-### Step 2: Getting mapability bigWig
+``` bash
+$REF_GENOME=/path/to/bwa/idex/
+for SAMPLE in *.fq.gz; do
+  bwa aln -t 16 -n 2 -q 40 $REF_GENOME ${SAMPLE}.fq.gz > ${SAMPLE}.sai
+  bwa samse $REF_GENOME ${SAMPLE}.sai ${SAMPLE}.fq.gz | samtools view --threads 16 -hb | samtools sort - > ${SAMPLE}.bam
+  samtools index ${SAMPLE}.bam
+  rm ${SAMPLE}.sai
+done;
+```
 
-A 50mer genome mappability file was created using the GenMap (https://github.com/cpockrandt/genmap).
-We used the precomputed index file for hg38/GRCh38 was downloaded from `http://ftp.imp.fu-berlin.de/pub/cpockrandt/genmap/indices/grch38-no-alt.tar.gz`
+### Create the bin annotations
 
-### Step 3: Getting the bin annotations
-
-The following Rscript (`R v3.6`) was used to get the final bins of different sizes (kb). 
+Next we used `R v3.6.0` with `BSgenome.Hsapiens.UCSC.hg38` and `QDNAseq` to generate bins of size `1, 5, 10, 15, 30, 50, 100, 500 and 1000` kbp.
 
 ``` r
+
 library(Biobase)
 library(BSgenome.Hsapiens.UCSC.hg38)
 library(QDNAseq)
 library(future)
 
+#set virtual mem
 options(future.globals.maxSize= 8912896000)
 
 # change the current plan to access parallelization
 future::plan("multiprocess", workers = 4)
 
 for (binsize in c(1000, 500, 30, 15, 50, 10, 5, 1)) {
-#for (binsize in c(200,300,400)) {
 
   bins <- createBins(bsgenome=BSgenome.Hsapiens.UCSC.hg38, binSize=binsize)
   bins$mappability <- calculateMappability(bins,
-    bigWigFile="/path/for/bigwig/grch38-no-alt.genmap.50mer.bigwig",
-    bigWigAverageOverBed="/path/for/bin/bigWigAverageOverBed")
+    bigWigFile="/path/to/hg38/mappability.genmap.50mer.bigwig",
+    bigWigAverageOverBed="/path/to/bigWigAverageOverBed")
 
   bins$blacklist <- calculateBlacklist(bins, bedFiles=c(
-    "/path/for/wgEncodeDacMapabilityConsensusExcludable.hg38.bed",
-    "/path/for/hg38-blacklist.v2.bed"
-    ))
+    "/path/to/hg38-blacklist.v2.bed"))
 
   bins$residual <- NA
   bins$use <- bins$chromosome %in% as.character(1:22) & bins$bases > 0
   
+  #
   tg <- binReadCounts(bins,
-    path="/path/for/hg38/bams/", cache=TRUE)
+    path="/path/to/1000Genomes/hg38/bams", cache=TRUE)
 
   bins$residual <- iterateResiduals(tg)
   
@@ -148,7 +170,7 @@ for (binsize in c(1000, 500, 30, 15, 50, 10, 5, 1)) {
     "Percentage of non-N nucleotides (of full bin size)",
     "Percentage of C and G nucleotides (of non-N nucleotides)",
     "Average mappability of 50mers with a maximum of 2 mismatches",
-    "Percent overlap with ENCODE blocklisted regions",
+    "Percent overlap with ENCODE blacklisted regions",
     "Median loess residual from 1000 Genomes (50mers)",
     "Whether the bin should be used in subsequent analysis steps"),
     row.names=colnames(bins)))
@@ -160,13 +182,13 @@ for (binsize in c(1000, 500, 30, 15, 50, 10, 5, 1)) {
     build='hg38',
     version=packageVersion("QDNAseq"),
     url=paste0(
-    "https://github.com/asntech/QDNAseq.hg38/raw/main/data/hg38.",
+    "https://github.com/asntech/QDNAseq.hg38/raw/master/data/hg38.",
     binsize, "kbp.SR50.rda"),
     md5=digest::digest(bins@data),
     sessionInfo=sessionInfo())
 
   attr(bins, "QDNAseq") <- QDNAseqInfo
-  save(bins, file=paste0("hg38.", binsize, "kbp.SR50.rda"))
+  save(bins, file=paste0("hg38.", binsize, "kbp.SR50.rda"), compress='xz')
 }
 
 ```
