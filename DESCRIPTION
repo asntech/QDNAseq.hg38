@@ -1,8 +1,8 @@
 Package: QDNAseq.hg38
 Type: Package
 Title: QDNAseq bin annotation for hg38
-Version: 1.0.0
-Date: 2020-09-11
+Version: 1.1.0
+Date: 2020-11-15
 Author: Aziz Khan
 Maintainer: Aziz Khan <azizk@stanford.edu>
 Description: This package provides QDNAseq bin annotations for the
