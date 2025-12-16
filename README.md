@@ -6,6 +6,9 @@
 
 This package provides QDNAseq bin annotations of size `1, 5, 10, 15, 30, 50, 100, 500 and 1000` kbp for the human genome build hg38.The bin annotations are created using the steps mentioned in QDNAseq vignette and also [here](https://github.com/ccagc/QDNAseq/issues/59).
 
+> ### Note: If you use this data package, plese cite:
+> Khan, A. QDNAseq.hg38: QDNAseq bin annotation for the human genome build hg38. Zenodo, 2025, doi: [10.5281/zenodo.4274555](https://doi.org/10.5281/zenodo.4274555)
+
 
 ## Installation
 
